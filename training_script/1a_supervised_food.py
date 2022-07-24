@@ -1,11 +1,11 @@
-import torch
 import numpy as np
+import torch
 from torch import nn 
-import torchvision
 from torch.utils.data import DataLoader, Subset
-from torchvision.models import resnet18, ResNet18_Weights
 from torch.optim import SGD
+import torchvision
 from torchvision import transforms
+from torchvision.models import resnet18, ResNet18_Weights
 import os
 import yaml
 import matplotlib.pyplot as plt
@@ -14,7 +14,7 @@ main_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 ## parameter
 #state_path = None
-state_path = 'supervised_offline_e008.pt'
+state_path = 'supervised_offline_e003.pt'
 
 to_train = False
 eval_perf = True
@@ -23,7 +23,7 @@ show_train_loss = True
 max_epoch = 100
 wu_epoch = 10
 batch_s = 64
-num_class = 101
+#num_class = 101
 opt_param = {
     'name': 'sgd',
     'lr': 0.2,
@@ -39,6 +39,10 @@ else:
     device = torch.device("cpu")
     print("Using CPU")
 
+
+
+
+
 # 0 Prepare data
 print('Preparing food101 dataset...')
 
@@ -46,14 +50,27 @@ data_dir = os.path.join(main_dir,'data')
 
 print('Checking dataset...')
 
-input_size = 224
-img_preproc = transforms.Compose([
-    transforms.CenterCrop(224),
-    transforms.ToTensor()
+input_size = [224, 224]
+data_aug_train = transforms.Compose([
+    transforms.RandomApply(
+        torch.nn.ModuleList([transforms.ColorJitter(brightness=0.4,contrast=0.4,saturation=0.4,hue=0.1)]),
+        p=0.8
+    ),
+    transforms.RandomResizedCrop(input_size),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
 ])
 
-food_train = torchvision.datasets.Food101(root=data_dir, split='train', transform=img_preproc, download=True)
-food_test = torchvision.datasets.Food101(root=data_dir, split='test', transform=img_preproc, download=True)
+data_aug_test = transforms.Compose([
+    transforms.CenterCrop([224, 224]),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
+])
+
+
+food_train = torchvision.datasets.Food101(root=data_dir, split='train', transform=data_aug_train, download=True)
+food_test = torchvision.datasets.Food101(root=data_dir, split='test', transform=data_aug_test, download=True)
 
 ## Seperate into 80% offline learning class and 20% incremental learning class
 print('Splitting data for offline learning...')
@@ -76,17 +93,19 @@ off_test_indices = [j for j in range(len(food_test)) if (food_test[j][1] in off_
 off_train_ds = Subset(food_train, off_train_indices)
 off_test_ds = Subset(food_test, off_test_indices)
 '''
+
 off_train_ds = food_train
 off_test_ds = food_test
 
 
 
 
-off_train_loader = DataLoader(off_train_ds, batch_size = batch_s, shuffle = True, num_workers = 4)
-off_test_loader = DataLoader(off_test_ds, batch_size = batch_s, shuffle = True, num_workers = 4)
+off_train_loader = DataLoader(off_train_ds, batch_size = batch_s, shuffle = True, num_workers = 8)
+off_test_loader = DataLoader(off_test_ds, batch_size = batch_s, shuffle = True, num_workers = 8)
+
 
 # 1 model and training
-class sup_food_reg_model():
+class sup_food_rec_model():
 
     def __init__(self, train_loader, num_class, optim_param, max_epoch, warmup_epoch, 
     device, out_dir):
@@ -214,13 +233,17 @@ class sup_food_reg_model():
 
 
 output_dir = os.path.join(main_dir, 'output_model')
-model = sup_food_reg_model(off_train_loader, num_off_class, opt_param, 
+model = sup_food_rec_model(off_train_loader, num_off_class, opt_param, 
 max_epoch, wu_epoch, device, output_dir)
+
 if state_path is not None:
     model.load_state(state_path)
 
 if to_train:
     model.train()
+
+
+
 
 ### Evaluate performance on test set
 if eval_perf:
