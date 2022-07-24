@@ -16,14 +16,13 @@ main_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 #state_path = None
 state_path = 'supervised_offline_e003.pt'
 
-to_train = False
-eval_perf = True
-show_train_loss = True
+to_train = True
+eval_perf = False
+show_train_loss = False
 
 max_epoch = 100
 wu_epoch = 10
 batch_s = 64
-#num_class = 101
 opt_param = {
     'name': 'sgd',
     'lr': 0.2,
@@ -227,7 +226,6 @@ class sup_food_rec_model():
     def show_train_prog(self):
         x_step = self.train_prog[:,0]
         y_loss = self.train_prog[:,1]
-        print(self.train_prog.size)
         plt.plot(x_step, y_loss, 'ro')
         plt.show()
 
