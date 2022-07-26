@@ -361,7 +361,7 @@ class ReLIC_off():
                 clf_optim.step()
             
             if (epoch+1) % 10 == 0:
-                print(f'Done training LC Epoch {epoch}/200. CELoss = {loss.item():.4f}')
+                print(f'Done training LC Epoch {epoch+1}/200. CELoss = {loss.item():.4f}')
 
         print('Evaluating accuracy of linear classfier...')
         with torch.no_grad():

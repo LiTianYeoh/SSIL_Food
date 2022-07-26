@@ -12,11 +12,11 @@ vf_root_dir = os.path.join(data_dir, 'vf172')
 
 ## parameter
 state_path = None
-#state_path = 'relic_offline_e013.pt'
+state_path = 'relic_offline_e004.pt'
 
-to_train = True
-eval_perf = False
-show_train_loss = False
+to_train = False
+eval_perf = True
+show_train_loss = True
 
 max_epoch = 100
 wu_epoch = 10
