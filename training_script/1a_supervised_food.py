@@ -3,6 +3,7 @@ import torch
 from torch import nn 
 from torch.utils.data import DataLoader, Subset
 from torch.optim import SGD
+import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 from torchvision import transforms
 from torchvision.models import resnet18, ResNet18_Weights
@@ -14,21 +15,15 @@ main_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 ## parameter
 #state_path = None
-state_path = 'supervised_offline_e003.pt'
+state_path = 'supervised_offline_e012_wosched.pt'
 
-to_train = True
-eval_perf = False
-show_train_loss = False
+to_train = False
+eval_perf = True
+show_train_loss = True
 
 max_epoch = 100
 wu_epoch = 10
 batch_s = 64
-opt_param = {
-    'name': 'sgd',
-    'lr': 0.2,
-    'momentum': 0.9,
-    'nesterov': True
-}
 
 
 if torch.cuda.is_available():
@@ -106,7 +101,7 @@ off_test_loader = DataLoader(off_test_ds, batch_size = batch_s, shuffle = True, 
 # 1 model and training
 class sup_food_rec_model():
 
-    def __init__(self, train_loader, num_class, optim_param, max_epoch, warmup_epoch, 
+    def __init__(self, train_loader, num_class, max_epoch, warmup_epoch, 
     device, out_dir):
 
         self.train_loader = train_loader
@@ -114,25 +109,30 @@ class sup_food_rec_model():
         num_ftrs = self.model.fc.in_features
         self.model.fc = nn.Linear(num_ftrs, num_class)
         self.model.to(device)
-
-        self.loss_fn = nn.CrossEntropyLoss()
-        self.optim_param = optim_param
         
         self.train_prog = np.empty((0,2))
         self.next_epoch = 1
         self.warmup_epoch = warmup_epoch
+        self.warmup_rate = 0.2/warmup_epoch
         self.max_epoch = max_epoch
+
+        self.loss_fn = nn.CrossEntropyLoss()
+        self.optim = SGD(self.model.parameters(), lr=1e-12, momentum=0.9, nesterov=True)
+        self.scheduler = lr_scheduler.CosineAnnealingLR(self.optim, max_epoch - warmup_epoch, eta_min=0.0, last_epoch=-1)
+
         self.device = device
         self.out_dir = out_dir
 
-        self.update_optim(optim_param, 1)
-
-    def update_optim(self, optim_param, epoch):
-        if epoch <= self.warmup_epoch:
-            curr_lr = optim_param['lr']*epoch/self.warmup_epoch
-            if optim_param['name'] == 'sgd':
-                self.optim = SGD(self.model.parameters(), lr = curr_lr, 
-                momentum = optim_param['momentum'], nesterov = optim_param['nesterov'])
+    def adj_optim_lr(self):
+        if self.next_epoch <= self.warmup_epoch:
+            next_lr = 1e-12 + self.next_epoch * self.warmup_rate
+            print(f'lr at epoch {self.next_epoch} = {next_lr}')
+            for group in self.optim.param_groups:
+                group["lr"] = next_lr
+        else:
+            self.scheduler.step()
+            next_lr = self.scheduler.get_last_lr().item()
+            print(f'lr at epoch {self.next_epoch} = {next_lr}')
 
     def train_step(self, batch):
         img, act_label = batch[0].to(self.device), batch[1].to(self.device)
@@ -153,7 +153,9 @@ class sup_food_rec_model():
 
         for epoch in range(self.next_epoch, self.max_epoch+1):
 
+            self.adj_optim_lr()
             epoch_step_loss = np.array([])
+
             for step, batch in enumerate(self.train_loader):
                 step_loss = self.train_step(batch)
                 epoch_step_loss = np.append(epoch_step_loss, step_loss)
@@ -165,8 +167,10 @@ class sup_food_rec_model():
             self.train_prog = np.append(self.train_prog, np.array([[epoch, epoch_mean_loss]]), axis=0)
 
             self.next_epoch += 1
-            self.update_optim(self.optim_param, self.next_epoch)
             self.save_state()
+
+            
+            
 
 
     def save_state(self):
@@ -174,6 +178,7 @@ class sup_food_rec_model():
             "next_epoch": self.next_epoch,
             "cnn_model": self.model.state_dict(),
             "optim": self.optim.state_dict(),
+            "scheduler": self.scheduler.state_dict(),
             "train_prog": self.train_prog
         }
         output_name = 'supervised_offline.pt'
@@ -186,6 +191,8 @@ class sup_food_rec_model():
         state = torch.load(file_path)
         self.model.load_state_dict(state['cnn_model'])
         self.optim.load_state_dict(state['optim'])
+        if 'scheduler' in state.keys():
+            self.scheduler.load_state_dict(state['scheduler'])
         self.next_epoch = state['next_epoch']
         self.train_prog = state['train_prog']
         print('Loaded state from ' + str(file_path))
@@ -207,14 +214,15 @@ class sup_food_rec_model():
             step_loss = TCELoss(pred_label_prob, act_label)
             total_loss += step_loss.item()
 
-            pred_label = [np.argmax(prob_dist) for prob_dist in pred_label_prob.cpu().numpy()]
-            step_good_pred = np.equal(pred_label, act_label.cpu().numpy()).sum()
+            _, pred_label = torch.max(pred_label_prob, 1)
+            step_good_pred = (pred_label==act_label).sum().item()
             total_good_pred += step_good_pred
 
             if (step+1) % 100 == 0 :
                 print('Done up to step ' + str(step+1) + '...')
 
         num_test_samples = len(test_loader.dataset)
+        print(num_test_samples)
         
         acc = total_good_pred / num_test_samples
         ACELoss = total_loss / num_test_samples
@@ -231,7 +239,7 @@ class sup_food_rec_model():
 
 
 output_dir = os.path.join(main_dir, 'output_model')
-model = sup_food_rec_model(off_train_loader, num_off_class, opt_param, 
+model = sup_food_rec_model(off_train_loader, num_off_class,
 max_epoch, wu_epoch, device, output_dir)
 
 if state_path is not None:

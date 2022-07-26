@@ -4,6 +4,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from torch.optim import SGD
+import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 from torchvision import transforms
 from torchvision.models import resnet18, ResNet18_Weights
@@ -15,7 +16,7 @@ main_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 ## parameter
 #state_path = None
-state_path = 'relic_offline_e002.pt'
+state_path = 'relic_offline_e013.pt'
 
 to_train = False
 eval_perf = True
@@ -102,7 +103,7 @@ class DoubleAugmentedDataset(Dataset):
 relic_off_train_ds = DoubleAugmentedDataset(off_train_ds, data_aug_train, data_aug_test)
 off_train_loader = DataLoader(relic_off_train_ds, batch_size = batch_s, shuffle = True, num_workers = 8)
 
-off_test_loader = DataLoader(off_test_ds, batch_size = batch_s, shuffle = True, num_workers = 8)
+off_test_loader = DataLoader(off_test_ds, batch_size = batch_s, shuffle = False, num_workers = 8)
 
 
 # 1 model and training
@@ -199,8 +200,7 @@ class OnlineNetwork(nn.Module):
     
 class relic_food_rec_model():
 
-    def __init__(self, train_loader, num_class, optim_param, max_epoch, warmup_epoch, 
-    device, out_dir):
+    def __init__(self, train_loader, max_epoch, warmup_epoch, device, out_dir):
 
         self.train_loader = train_loader
         encoder = resnet18(weights = ResNet18_Weights.IMAGENET1K_V1)
@@ -209,24 +209,29 @@ class relic_food_rec_model():
         self.model = OnlineNetwork(encoder, encoder_dim, 128)
         self.model.to(device)
 
-        self.loss_fn = RelicLoss()
-        self.optim_param = optim_param
-        
         self.train_prog = np.empty((0,2))
         self.next_epoch = 1
         self.warmup_epoch = warmup_epoch
+        self.warmup_rate = 0.2/warmup_epoch
         self.max_epoch = max_epoch
+
+        self.loss_fn = RelicLoss()
+        self.optim = SGD(self.model.parameters(), lr=1e-12, momentum=0.9, nesterov=True)
+        self.scheduler = lr_scheduler.CosineAnnealingLR(self.optim, max_epoch - warmup_epoch, eta_min=0.0, last_epoch=-1)
+
         self.device = device
         self.out_dir = out_dir
 
-        self.update_optim(optim_param, 1)
-
-    def update_optim(self, optim_param, epoch):
-        if epoch <= self.warmup_epoch:
-            curr_lr = optim_param['lr']*epoch/self.warmup_epoch
-            if optim_param['name'] == 'sgd':
-                self.optim = SGD(self.model.parameters(), lr = curr_lr, 
-                momentum = optim_param['momentum'], nesterov = optim_param['nesterov'])
+    def adj_optim_lr(self):
+        if self.next_epoch <= self.warmup_epoch:
+            next_lr = 1e-12 + self.next_epoch * self.warmup_rate
+            print(f'lr at epoch {self.next_epoch} = {next_lr}')
+            for group in self.optim.param_groups:
+                group["lr"] = next_lr
+        else:
+            self.scheduler.step()
+            next_lr = self.scheduler.get_last_lr()
+            print(f'lr at epoch {self.next_epoch} = {next_lr}')
 
     def train_step(self, batch):
         img_orig, img_1, img_2 = batch["img"].to(self.device), batch["aug_1"].to(self.device), batch["aug_2"].to(self.device)
@@ -249,7 +254,9 @@ class relic_food_rec_model():
 
         for epoch in range(self.next_epoch, self.max_epoch+1):
 
+            self.adj_optim_lr()
             epoch_step_loss = np.array([])
+
             for step, batch in enumerate(self.train_loader):
                 step_loss = self.train_step(batch)
                 epoch_step_loss = np.append(epoch_step_loss, step_loss)
@@ -261,7 +268,6 @@ class relic_food_rec_model():
             self.train_prog = np.append(self.train_prog, np.array([[epoch, epoch_mean_loss]]), axis=0)
 
             self.next_epoch += 1
-            self.update_optim(self.optim_param, self.next_epoch)
             self.save_state()
 
 
@@ -270,6 +276,7 @@ class relic_food_rec_model():
             "next_epoch": self.next_epoch,
             "cnn_model": self.model.state_dict(),
             "optim": self.optim.state_dict(),
+            "scheduler": self.scheduler.state_dict(),
             "train_prog": self.train_prog
         }
         output_name = 'relic_offline.pt'
@@ -282,6 +289,7 @@ class relic_food_rec_model():
         state = torch.load(file_path)
         self.model.load_state_dict(state['cnn_model'])
         self.optim.load_state_dict(state['optim'])
+        self.scheduler.load_state_dict(state['scheduler'])
         self.next_epoch = state['next_epoch']
         self.train_prog = state['train_prog']
         print('Loaded state from ' + str(file_path))
@@ -299,7 +307,7 @@ class relic_food_rec_model():
         
         ftrvecs, act_label = np.concatenate(ftrvecs, axis=0), np.concatenate(act_label, axis=0)
         ftr_ds = ftr_dataset(ftrvecs, act_label)
-        ftr_data_loader = DataLoader(ftr_ds, batch_size = 256, num_workers=8)
+        ftr_data_loader = DataLoader(ftr_ds, batch_size = 512, num_workers=8)
 
         return ftr_data_loader
 
@@ -327,11 +335,11 @@ class relic_food_rec_model():
         with torch.no_grad():
             total_good_pred = 0
             for step, batch in enumerate(ftr_dloader):
-                ftrvecs, act_lab = batch[0].to(self.device), batch[1]
+                ftrvecs, act_lab = batch[0].to(self.device), batch[1].to(self.device)
                 pred_lab_prob = clf_head(ftrvecs)
 
-                pred_label = [np.argmax(prob_dist) for prob_dist in pred_lab_prob.cpu().numpy()]
-                step_good_pred = np.equal(pred_label, act_lab.cpu().numpy()).sum()
+                _, pred_label = torch.max(pred_lab_prob, 1)
+                step_good_pred = (pred_label==act_lab).sum().item()
                 total_good_pred += step_good_pred
 
                 if (step+1) % 100 == 0 :
