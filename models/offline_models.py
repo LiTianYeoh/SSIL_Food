@@ -1,127 +1,12 @@
 import numpy as np
 import torch
-from torch import nn 
+from torch import nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
-from torch.optim import SGD
-import torch.optim.lr_scheduler as lr_scheduler
-import torchvision
-from torchvision import transforms
+from torch.optim import SGD, lr_scheduler
 from torchvision.models import resnet18, ResNet18_Weights
-import os
-import yaml
+import os.path
 import matplotlib.pyplot as plt
-
-main_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
-## parameter
-#state_path = None
-state_path = 'relic_offline_e013.pt'
-
-to_train = False
-eval_perf = True
-show_train_loss = False
-
-max_epoch = 100
-wu_epoch = 10
-batch_s = 20
-opt_param = {
-    'name': 'sgd',
-    'lr': 0.2,
-    'momentum': 0.9,
-    'nesterov': True
-}
-
-
-if torch.cuda.is_available():
-    device = torch.device("cuda")
-    print("Found GPU device: {}".format(torch.cuda.get_device_name(0)))
-else:
-    device = torch.device("cpu")
-    print("Using CPU")
-
-
-
-
-# 0 Prepare data
-print('Preparing food101 dataset...')
-
-data_dir = os.path.join(main_dir,'data')
-
-print('Checking dataset...')
-
-input_size = [224, 224]
-data_aug_train = transforms.Compose([
-    transforms.RandomApply(
-        torch.nn.ModuleList([transforms.ColorJitter(brightness=0.4,contrast=0.4,saturation=0.4,hue=0.1)]),
-        p=0.8
-    ),
-    transforms.RandomResizedCrop(input_size),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
-])
-
-data_aug_test = transforms.Compose([
-    transforms.Resize([224, 224]),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
-])
-
-food_train = torchvision.datasets.Food101(root=data_dir, split='train', download=True)
-food_test = torchvision.datasets.Food101(root=data_dir, split='test', transform = data_aug_test, download=True)
-
-## Seperate into 80% offline learning class and 20% incremental learning class
-print('Splitting data for offline learning...')
-
-
-
-
-
-num_off_class = 101
-off_train_ds = food_train
-off_test_ds = food_test
-
-class DoubleAugmentedDataset(Dataset):
-
-    def __init__(self, dataset, trans_train, trans_test):
-        super(DoubleAugmentedDataset, self).__init__()
-        self.dataset = dataset 
-        self.trans_train = trans_train
-        self.trans_test = trans_test
-
-    def __len__(self):
-        return len(self.dataset)
-
-    def __getitem__(self, idx):
-        orig_img, label = self.dataset[idx]
-        img = self.trans_test(orig_img)
-        aug1 = self.trans_train(orig_img)
-        aug2 = self.trans_train(orig_img)
-        return {"index": idx, "img": img, "aug_1": aug1, "aug_2": aug2, "label": label}
-
-relic_off_train_ds = DoubleAugmentedDataset(off_train_ds, data_aug_train, data_aug_test)
-off_train_loader = DataLoader(relic_off_train_ds, batch_size = batch_s, shuffle = True, num_workers = 8)
-
-off_test_loader = DataLoader(off_test_ds, batch_size = batch_s, shuffle = False, num_workers = 8)
-
-
-# 1 model and training
-
-class ftr_dataset(Dataset):
-
-    def __init__(self, ftrvecs, label):
-        super(ftr_dataset, self).__init__()
-        self.ftrvecs = ftrvecs
-        self.label = label
-    
-    def __getitem__(self, idx):
-        return self.ftrvecs[idx], self.label[idx]
-
-    def __len__(self):
-        return len(self.ftrvecs)
-
-
+from utils.data_utils import get_ftr_dloader
 
 
 class MLP(nn.Module):
@@ -197,8 +82,150 @@ class OnlineNetwork(nn.Module):
         x = self.pred_head(self.proj_head(self.encoder(x)))
         return F.normalize(x, dim=-1, p=2)
 
+
+
+
+class SUP_off():
+
+    def __init__(self, train_loader, num_class, max_epoch, warmup_epoch, 
+    device, out_dir):
+
+        self.train_loader = train_loader
+        self.model = resnet18(weights = ResNet18_Weights.IMAGENET1K_V1)
+        num_ftrs = self.model.fc.in_features
+        self.model.fc = nn.Linear(num_ftrs, num_class)
+        self.model.to(device)
+        
+        self.train_prog = np.empty((0,2))
+        self.next_epoch = 1
+        self.warmup_epoch = warmup_epoch
+        self.warmup_rate = 0.2/warmup_epoch
+        self.max_epoch = max_epoch
+
+        self.loss_fn = nn.CrossEntropyLoss()
+        self.optim = SGD(self.model.parameters(), lr=1e-12, momentum=0.9, nesterov=True)
+        self.scheduler = lr_scheduler.CosineAnnealingLR(self.optim, max_epoch - warmup_epoch, eta_min=0.0, last_epoch=-1)
+
+        self.device = device
+        self.out_dir = out_dir
+
+    def adj_optim_lr(self):
+        if self.next_epoch <= self.warmup_epoch:
+            next_lr = 1e-12 + self.next_epoch * self.warmup_rate
+            print(f'lr at epoch {self.next_epoch} = {next_lr:.6f}')
+            for group in self.optim.param_groups:
+                group["lr"] = next_lr
+        else:
+            self.scheduler.step()
+            next_lr = self.scheduler.get_last_lr()[0]
+            print(f'lr at epoch {self.next_epoch} = {next_lr:.6f}')
+
+    def train_step(self, batch):
+        img, act_label = batch[0].to(self.device), batch[1].to(self.device)
+
+        # forward
+        pred_label = self.model(img)
+        loss = self.loss_fn(pred_label, act_label)
+
+        # backward
+        self.optim.zero_grad()
+        loss.backward()
+        self.optim.step()
+
+        return loss.item()
+
+    def train_model(self):
+        self.model.train()
+        print(f'Training with max epoch {self.max_epoch} ...')
+
+        for epoch in range(self.next_epoch, self.max_epoch+1):
+
+            self.adj_optim_lr()
+            epoch_step_loss = np.array([])
+
+            for step, batch in enumerate(self.train_loader):
+                step_loss = self.train_step(batch)
+                epoch_step_loss = np.append(epoch_step_loss, step_loss)
+                if (step+1) % 100 == 0:
+                    with torch.no_grad():
+                        print(f'Epoch: {epoch}, Step: {step+1}, CELoss = {step_loss:.4f}')
+                        
+            epoch_mean_loss = np.mean(epoch_step_loss)
+            self.train_prog = np.append(self.train_prog, np.array([[epoch, epoch_mean_loss]]), axis=0)
+
+            self.next_epoch += 1
+            self.save_state()
+
+    def save_state(self):
+        state = {
+            "next_epoch": self.next_epoch,
+            "cnn_model": self.model.state_dict(),
+            "optim": self.optim.state_dict(),
+            "scheduler": self.scheduler.state_dict(),
+            "train_prog": self.train_prog
+        }
+        output_name = 'supervised_offline.pt'
+        output_path = os.path.join(self.out_dir, output_name)
+        torch.save(state, output_path)
+        print("Saved state at " + output_path)
     
-class relic_food_rec_model():
+    def load_state(self, state_file):
+        file_path = os.path.join(self.out_dir, state_file)
+        state = torch.load(file_path)
+        self.model.load_state_dict(state['cnn_model'])
+        self.optim.load_state_dict(state['optim'])
+        if 'scheduler' in state.keys():
+            self.scheduler.load_state_dict(state['scheduler'])
+        self.next_epoch = state['next_epoch']
+        self.train_prog = state['train_prog']
+        print('Loaded state from ' + str(file_path))
+
+    def predict(self, img_batch):
+        return(self.model(img_batch))
+
+    @torch.no_grad()
+    def eval_perf(self, test_loader):
+        self.model.eval()
+        print('Evaluating performance...')
+        
+        total_good_pred = 0
+        total_loss = 0
+
+        for step, batch in enumerate(test_loader):
+            img, act_label = batch[0].to(self.device), batch[1].to(self.device)
+            pred_label_prob = self.model(img)
+
+            TCELoss = nn.CrossEntropyLoss(reduction='sum')
+            step_loss = TCELoss(pred_label_prob, act_label)
+            total_loss += step_loss.item()
+
+            _, pred_label = torch.max(pred_label_prob, 1)
+            step_good_pred = (pred_label==act_label).sum().item()
+            total_good_pred += step_good_pred
+
+            if (step+1) % 100 == 0 :
+                print('Done up to step ' + str(step+1) + '...')
+
+        num_test_samples = len(test_loader.dataset)
+        
+        acc = total_good_pred / num_test_samples
+        ACELoss = total_loss / num_test_samples
+
+        print(f'After {self.next_epoch-1} epochs:')
+        print(f'Average Cross Entropy Loss = {ACELoss:.4f}.')
+        print(f'Accuracy = {acc:.4f}.') 
+
+        self.model.train()
+        
+    def show_train_prog(self):
+        x_step = self.train_prog[:,0]
+        y_loss = self.train_prog[:,1]
+        plt.plot(x_step, y_loss, 'ro')
+        plt.show()
+
+
+
+class ReLIC_off():
 
     def __init__(self, train_loader, max_epoch, warmup_epoch, device, out_dir):
 
@@ -225,7 +252,7 @@ class relic_food_rec_model():
     def adj_optim_lr(self):
         if self.next_epoch <= self.warmup_epoch:
             next_lr = 1e-12 + self.next_epoch * self.warmup_rate
-            print(f'lr at epoch {self.next_epoch} = {next_lr}')
+            print(f'lr at epoch {self.next_epoch} = {next_lr:.6f}')
             for group in self.optim.param_groups:
                 group["lr"] = next_lr
         else:
@@ -308,8 +335,7 @@ class relic_food_rec_model():
                 print(f'Done feature up to step {step+1}...')
         
         ftrvecs, act_label = np.concatenate(ftrvecs, axis=0), np.concatenate(act_label, axis=0)
-        ftr_ds = ftr_dataset(ftrvecs, act_label)
-        ftr_data_loader = DataLoader(ftr_ds, batch_size = 512, num_workers=8)
+        ftr_data_loader = get_ftr_dloader(ftrvec=ftrvecs, label=act_label, batch_size=512)
 
         return ftr_data_loader
 
@@ -319,7 +345,7 @@ class relic_food_rec_model():
         print('Evaluating performance of features with linear classifier...')
 
         ftr_dloader = self.build_ftrs_dataloader(test_loader)
-        clf_head = nn.Linear(128, num_class).to(device)
+        clf_head = nn.Linear(128, num_class).to(self.device)
         clf_optim = torch.optim.SGD(params = clf_head.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
         loss_fn = nn.CrossEntropyLoss()
 
@@ -365,26 +391,3 @@ class relic_food_rec_model():
         y_loss = self.train_prog[:,1]
         plt.plot(x_step, y_loss, 'ro')
         plt.show()
-
-
-output_dir = os.path.join(main_dir, 'output_model')
-model = relic_food_rec_model(off_train_loader, max_epoch, wu_epoch, device, output_dir)
-
-
-
-if state_path is not None:
-    model.load_state(state_path)
-
-if to_train:
-    model.train_model()
-
-
-
-
-### Evaluate performance on test set
-if eval_perf:
-    model.linear_eval_perf(off_test_loader, 101)
-
-### Train (epoch) loss graph
-if show_train_loss:
-    model.show_train_prog()

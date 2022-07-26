@@ -1,0 +1,2 @@
+0727, 0251: ReLIC offline E2S1100 (max 3000)
+0727, 0307: ReLIC offline E3S2400 (max 3000)
