@@ -17,8 +17,8 @@ main_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 #state_path = None
 state_path = 'supervised_offline_e012.pt'
 
-to_train = False
-eval_perf = True
+to_train = True
+eval_perf = False
 show_train_loss = False
 
 max_epoch = 100
@@ -131,7 +131,7 @@ class sup_food_rec_model():
                 group["lr"] = next_lr
         else:
             self.scheduler.step()
-            next_lr = self.scheduler.get_last_lr().item()
+            next_lr = self.scheduler.get_last_lr()[0]
             print(f'lr at epoch {self.next_epoch} = {next_lr}')
 
     def train_step(self, batch):

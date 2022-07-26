@@ -20,7 +20,7 @@ state_path = 'relic_offline_e013.pt'
 
 to_train = False
 eval_perf = True
-show_train_loss = True
+show_train_loss = False
 
 max_epoch = 100
 wu_epoch = 10
@@ -230,8 +230,8 @@ class relic_food_rec_model():
                 group["lr"] = next_lr
         else:
             self.scheduler.step()
-            next_lr = self.scheduler.get_last_lr()
-            print(f'lr at epoch {self.next_epoch} = {next_lr}')
+            next_lr = self.scheduler.get_last_lr()[0]
+            print(f'lr at epoch {self.next_epoch} = {next_lr:.6f}')
 
     def train_step(self, batch):
         img_orig, img_1, img_2 = batch["img"].to(self.device), batch["aug_1"].to(self.device), batch["aug_2"].to(self.device)
@@ -366,8 +366,7 @@ class relic_food_rec_model():
 
 
 output_dir = os.path.join(main_dir, 'output_model')
-model = relic_food_rec_model(off_train_loader, num_off_class, opt_param, 
-max_epoch, wu_epoch, device, output_dir)
+model = relic_food_rec_model(off_train_loader, max_epoch, wu_epoch, device, output_dir)
 
 
 
