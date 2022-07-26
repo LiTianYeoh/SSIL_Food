@@ -63,7 +63,7 @@ data_aug_train = transforms.Compose([
 ])
 
 data_aug_test = transforms.Compose([
-    transforms.CenterCrop([224, 224]),
+    transforms.Resize([224, 224]),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
 ])
@@ -324,7 +324,7 @@ class relic_food_rec_model():
         loss_fn = nn.CrossEntropyLoss()
 
         print('Training linear classifier... ')
-        for epoch in range(1,101):
+        for epoch in range(1,201):
             for step, batch in enumerate(ftr_dloader):
                 ftrvecs, lab = batch[0].to(self.device), batch[1].to(self.device)
                 pred_lab = clf_head(ftrvecs)
@@ -333,7 +333,9 @@ class relic_food_rec_model():
                 clf_optim.zero_grad()
                 loss.backward()
                 clf_optim.step()
-            print(f'Done training LC Epoch {epoch}/100. CELoss = {loss.item():.4f}')
+            
+            if (epoch+1) % 10 == 0:
+                print(f'Done training LC Epoch {epoch}/200. CELoss = {loss.item():.4f}')
 
         print('Evaluating accuracy of linear classfier...')
         with torch.no_grad():

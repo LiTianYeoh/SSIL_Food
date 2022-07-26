@@ -15,11 +15,11 @@ main_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 ## parameter
 #state_path = None
-state_path = 'supervised_offline_e012.pt'
+state_path = 'supervised_offline_e020.pt'
 
-to_train = True
-eval_perf = False
-show_train_loss = False
+to_train = False
+eval_perf = True
+show_train_loss = True
 
 max_epoch = 100
 wu_epoch = 10
@@ -57,7 +57,7 @@ data_aug_train = transforms.Compose([
 ])
 
 data_aug_test = transforms.Compose([
-    transforms.CenterCrop([224, 224]),
+    transforms.Resize([224, 224]),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
 ])
@@ -132,7 +132,7 @@ class sup_food_rec_model():
         else:
             self.scheduler.step()
             next_lr = self.scheduler.get_last_lr()[0]
-            print(f'lr at epoch {self.next_epoch} = {next_lr}')
+            print(f'lr at epoch {self.next_epoch} = {next_lr:.6f}')
 
     def train_step(self, batch):
         img, act_label = batch[0].to(self.device), batch[1].to(self.device)
