@@ -249,7 +249,8 @@ class relic_food_rec_model():
 
         return loss.item()
 
-    def train(self):
+    def train_model(self):
+        self.model.train()
         print(f'Training with max epoch {self.max_epoch} ...')
 
         for epoch in range(self.next_epoch, self.max_epoch+1):
@@ -289,7 +290,8 @@ class relic_food_rec_model():
         state = torch.load(file_path)
         self.model.load_state_dict(state['cnn_model'])
         self.optim.load_state_dict(state['optim'])
-        self.scheduler.load_state_dict(state['scheduler'])
+        if 'scheduler' in state.keys():
+            self.scheduler.load_state_dict(state['scheduler'])
         self.next_epoch = state['next_epoch']
         self.train_prog = state['train_prog']
         print('Loaded state from ' + str(file_path))
@@ -312,6 +314,8 @@ class relic_food_rec_model():
         return ftr_data_loader
 
     def linear_eval_perf(self, test_loader, num_class):
+        self.model.eval()
+
         print('Evaluating performance of features with linear classifier...')
 
         ftr_dloader = self.build_ftrs_dataloader(test_loader)
@@ -351,6 +355,8 @@ class relic_food_rec_model():
         print(f'After {self.next_epoch-1} epochs:')
         print(f'Linear Classifier Accuracy = {acc:.4f}.') 
 
+        self.model.train()
+
         
     def show_train_prog(self):
         x_step = self.train_prog[:,0]
@@ -369,7 +375,7 @@ if state_path is not None:
     model.load_state(state_path)
 
 if to_train:
-    model.train()
+    model.train_model()
 
 
 

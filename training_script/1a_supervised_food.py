@@ -15,11 +15,11 @@ main_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 ## parameter
 #state_path = None
-state_path = 'supervised_offline_e012_wosched.pt'
+state_path = 'supervised_offline_e012.pt'
 
 to_train = False
 eval_perf = True
-show_train_loss = True
+show_train_loss = False
 
 max_epoch = 100
 wu_epoch = 10
@@ -95,7 +95,7 @@ off_test_ds = food_test
 
 
 off_train_loader = DataLoader(off_train_ds, batch_size = batch_s, shuffle = True, num_workers = 8)
-off_test_loader = DataLoader(off_test_ds, batch_size = batch_s, shuffle = True, num_workers = 8)
+off_test_loader = DataLoader(off_test_ds, batch_size = batch_s, shuffle = False, num_workers = 8)
 
 
 # 1 model and training
@@ -148,7 +148,8 @@ class sup_food_rec_model():
 
         return loss.item()
 
-    def train(self):
+    def train_model(self):
+        self.model.train()
         print(f'Training with max epoch {self.max_epoch} ...')
 
         for epoch in range(self.next_epoch, self.max_epoch+1):
@@ -168,10 +169,6 @@ class sup_food_rec_model():
 
             self.next_epoch += 1
             self.save_state()
-
-            
-            
-
 
     def save_state(self):
         state = {
@@ -202,7 +199,9 @@ class sup_food_rec_model():
 
     @torch.no_grad()
     def eval_perf(self, test_loader):
+        self.model.eval()
         print('Evaluating performance...')
+        
         total_good_pred = 0
         total_loss = 0
 
@@ -222,7 +221,6 @@ class sup_food_rec_model():
                 print('Done up to step ' + str(step+1) + '...')
 
         num_test_samples = len(test_loader.dataset)
-        print(num_test_samples)
         
         acc = total_good_pred / num_test_samples
         ACELoss = total_loss / num_test_samples
@@ -230,6 +228,8 @@ class sup_food_rec_model():
         print(f'After {self.next_epoch-1} epochs:')
         print(f'Average Cross Entropy Loss = {ACELoss:.4f}.')
         print(f'Accuracy = {acc:.4f}.') 
+
+        self.model.train()
         
     def show_train_prog(self):
         x_step = self.train_prog[:,0]
@@ -246,7 +246,7 @@ if state_path is not None:
     model.load_state(state_path)
 
 if to_train:
-    model.train()
+    model.train_model()
 
 
 
