@@ -11,8 +11,8 @@ f1_root_dir = os.path.join(data_dir, 'food-101')
 vf_root_dir = os.path.join(data_dir, 'vf172')
 
 ## parameter
-state_path = None
-#state_path = 'supervised_offline_e020.pt'
+#state_path = None
+state_path = 'supervised_offline_e020.pt'
 
 to_train = True
 eval_perf = False
@@ -21,6 +21,7 @@ show_train_loss = False
 max_epoch = 100
 wu_epoch = 10
 batch_s = 64
+lr = 0.2
 
 
 if torch.cuda.is_available():
@@ -47,7 +48,7 @@ test_loader = f1_off_test_loader
 
 # Model and training
 output_dir = os.path.join(main_dir, 'output_model')
-model = SUP_off(train_loader, num_off_class, max_epoch, wu_epoch, device, output_dir)
+model = SUP_off(train_loader, num_off_class, max_epoch, wu_epoch, lr, device, output_dir)
 
 if state_path is not None:
     model.load_state(state_path)

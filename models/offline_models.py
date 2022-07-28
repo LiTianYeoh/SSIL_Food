@@ -87,7 +87,7 @@ class OnlineNetwork(nn.Module):
 
 class SUP_off():
 
-    def __init__(self, train_loader, num_class, max_epoch, warmup_epoch, 
+    def __init__(self, train_loader, num_class, max_epoch, warmup_epoch, lr,
     device, out_dir):
 
         self.train_loader = train_loader
@@ -99,7 +99,7 @@ class SUP_off():
         self.train_prog = np.empty((0,2))
         self.next_epoch = 1
         self.warmup_epoch = warmup_epoch
-        self.warmup_rate = 0.2/warmup_epoch
+        self.warmup_rate = lr/warmup_epoch
         self.max_epoch = max_epoch
 
         self.loss_fn = nn.CrossEntropyLoss()
@@ -227,7 +227,7 @@ class SUP_off():
 
 class ReLIC_off():
 
-    def __init__(self, train_loader, max_epoch, warmup_epoch, device, out_dir):
+    def __init__(self, train_loader, max_epoch, warmup_epoch, lr, device, out_dir):
 
         self.train_loader = train_loader
         encoder = resnet18(weights = ResNet18_Weights.IMAGENET1K_V1)
@@ -239,7 +239,7 @@ class ReLIC_off():
         self.train_prog = np.empty((0,2))
         self.next_epoch = 1
         self.warmup_epoch = warmup_epoch
-        self.warmup_rate = 0.2/warmup_epoch
+        self.warmup_rate = lr/warmup_epoch
         self.max_epoch = max_epoch
 
         self.loss_fn = RelicLoss()

@@ -11,8 +11,8 @@ f1_root_dir = os.path.join(data_dir, 'food-101')
 vf_root_dir = os.path.join(data_dir, 'vf172')
 
 ## parameter
-state_path = None
-state_path = 'relic_offline_e004.pt'
+#state_path = None
+state_path = 'relic_offline_e020.pt'
 
 to_train = False
 eval_perf = True
@@ -21,12 +21,7 @@ show_train_loss = True
 max_epoch = 100
 wu_epoch = 10
 batch_s = 20
-opt_param = {
-    'name': 'sgd',
-    'lr': 0.2,
-    'momentum': 0.9,
-    'nesterov': True
-}
+lr = 0.2
 
 
 if torch.cuda.is_available():
@@ -61,7 +56,7 @@ test_loader = f1_off_test_loader
 
 # Model and training
 output_dir = os.path.join(main_dir, 'output_model')
-model = ReLIC_off(relic_train_loader, max_epoch, wu_epoch, device, output_dir)
+model = ReLIC_off(relic_train_loader, max_epoch, wu_epoch, lr, device, output_dir)
 
 if state_path is not None:
     model.load_state(state_path)
