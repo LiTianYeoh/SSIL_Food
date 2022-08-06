@@ -81,6 +81,7 @@ def slda_eval_acc(slda, ftr_ext, test_loader):
             print('Done up to step ' + str(step+1) + '...')
     
     acc = total_good_pred / num_test_samples
-    print(f'Accuracy = {acc:.4f}.') 
+    return acc
+    
 
 

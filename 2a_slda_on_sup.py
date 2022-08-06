@@ -15,7 +15,7 @@ vf_root_dir = os.path.join(data_dir, 'vf172')
 ## parameter
 
 off_state_path = 'supervised_offline_e100.pt'
-inc_state_name = None
+inc_state_name = 'supervised_inc'
 
 output_layers = ['layer4.1']
 batch_s = 64
@@ -61,6 +61,8 @@ slda_classifier = StreamingLDA(input_shape=ftr_size, num_classes=num_tot_class, 
 
 if inc_state_name is not None:
     slda_classifier.load_model(save_path=output_dir, save_name=inc_state_name)
+    slda_path = os.path.join(output_dir, inc_state_name + '.pth')
+    print('Loaded SLDA classifier state from ' + str(slda_path))
 else:
     # Fit for base (offline) data
     print('Initialising SLDA with base class...')
@@ -114,7 +116,9 @@ else:
 
 # Evaluate accuracy
 print('Evaluating accuracy on base (off) test set...')
-slda_eval_acc(slda_classifier, ftr_extraction_wrapper, off_test_loader)
+off_test_acc = slda_eval_acc(slda_classifier, ftr_extraction_wrapper, off_test_loader)
+print(f'Accuracy = {off_test_acc:.4f}.') 
 
 print('Evaluating accuracy on new (inc) test set...')
-slda_eval_acc(slda_classifier, ftr_extraction_wrapper, inc_test_loader)
+inc_test_acc = slda_eval_acc(slda_classifier, ftr_extraction_wrapper, inc_test_loader)
+print(f'Accuracy = {inc_test_acc:.4f}.') 
