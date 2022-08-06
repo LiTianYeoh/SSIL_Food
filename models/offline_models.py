@@ -147,8 +147,7 @@ class SUP_off():
                 step_loss = self.train_step(batch)
                 epoch_step_loss = np.append(epoch_step_loss, step_loss)
                 if (step+1) % 100 == 0:
-                    with torch.no_grad():
-                        print(f'Epoch: {epoch}, Step: {step+1}, CELoss = {step_loss:.4f}')
+                    print(f'Epoch: {epoch}, Step: {step+1}, CELoss = {step_loss:.4f}')
                         
             epoch_mean_loss = np.mean(epoch_step_loss)
             self.train_prog = np.append(self.train_prog, np.array([[epoch, epoch_mean_loss]]), axis=0)
@@ -289,8 +288,7 @@ class ReLIC_off():
                 step_loss = self.train_step(batch)
                 epoch_step_loss = np.append(epoch_step_loss, step_loss)
                 if (step+1) % 100 == 0:
-                    with torch.no_grad():
-                        print(f'Epoch: {epoch}, Step: {step+1}, ReLIC_Loss = {step_loss:.4f}')
+                    print(f'Epoch: {epoch}, Step: {step+1}, ReLIC_Loss = {step_loss:.4f}')
                         
             epoch_mean_loss = np.mean(epoch_step_loss)
             self.train_prog = np.append(self.train_prog, np.array([[epoch, epoch_mean_loss]]), axis=0)
