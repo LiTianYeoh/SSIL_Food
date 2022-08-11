@@ -4,7 +4,7 @@ import json
 import PIL.Image
 import os
 import yaml
-from .transform_utils import train_trans, test_trans
+from .transform_utils import train_trans, test_trans, pure_trans
 
 ######### Classes
 class ftr_dataset(Dataset):
@@ -160,6 +160,7 @@ def get_f1_off_relic_dloader(f1_root_dir, batch_size=20):
     return relic_off_train_loader
 
 def get_f1_eval_train_dloader(f1_root_dir, batch_size =64):
+
     ds_split_path = os.path.join(f1_root_dir, 'food101_split.yaml')
     split_file = open(ds_split_path, "r")
     food_ds_split = yaml.safe_load(split_file)
@@ -172,3 +173,29 @@ def get_f1_eval_train_dloader(f1_root_dir, batch_size =64):
     f1_eval_train_loader = DataLoader(f1_eval_train_ds, batch_size = batch_size, shuffle = False, num_workers = 8)
 
     return f1_eval_train_loader, num_off_class
+
+def get_f1_pure_dloader(f1_root_dir, off_inc='off', split = 'train', batch_size=64):
+    #### read split yaml file
+    ds_split_path = os.path.join(f1_root_dir, 'food101_split.yaml')
+    split_file = open(ds_split_path, "r")
+    food_ds_split = yaml.safe_load(split_file)
+    split_file.close()
+
+    off_label, inc_label = food_ds_split['off'], food_ds_split['inc']
+    num_off_class = len(off_label)
+    num_inc_class = len(inc_label)
+
+    if off_inc == 'off':
+        lab_list = off_label
+        start_index = 0
+        dloader_num_class = num_off_class
+    elif off_inc == 'inc':
+        lab_list = inc_label
+        start_index = num_off_class
+        dloader_num_class = num_inc_class
+
+    f1_pure_ds = F1Subset(f1_root_dir, split=split, transform = pure_trans, label_list=lab_list, start_label_idx=start_index)
+    f1_pure_loader = DataLoader(f1_pure_ds, batch_size = batch_size, shuffle = True, num_workers = 8)
+
+    return f1_pure_loader, dloader_num_class
+
