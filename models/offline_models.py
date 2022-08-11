@@ -185,7 +185,6 @@ class SUP_off():
     @torch.no_grad()
     def eval_perf(self, test_loader):
         self.model.eval()
-        print('Evaluating performance...')
         
         total_good_pred = 0
         total_loss = 0

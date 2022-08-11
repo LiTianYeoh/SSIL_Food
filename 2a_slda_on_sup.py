@@ -15,7 +15,7 @@ vf_root_dir = os.path.join(data_dir, 'vf172')
 ## parameter
 
 off_state_path = 'supervised_offline_e100.pt'
-inc_state_name = 'supervised_inc'
+inc_state_name = None #'supervised_inc'
 
 output_layers = ['layer4.1']
 batch_s = 64
@@ -92,6 +92,11 @@ else:
     print('Fitting slda with features from base class...')
     slda_classifier.fit_base(base_init_data, base_init_labels)
 
+    print('Evaluating accuracy before introducing new classes:')
+    print('Evaluating accuracy on base (off) test set...')
+    off_test_acc = slda_eval_acc(slda_classifier, ftr_extraction_wrapper, off_test_loader)
+    print(f'Accuracy = {off_test_acc:.4f}.') 
+
     # Train SLDA incrementally
     print('Training SLDA with new class...')
 
@@ -115,6 +120,7 @@ else:
     slda_classifier.save_model(save_path=output_dir, save_name='supervised_inc')
 
 # Evaluate accuracy
+print('Evaluating final accuracy:')
 print('Evaluating accuracy on base (off) test set...')
 off_test_acc = slda_eval_acc(slda_classifier, ftr_extraction_wrapper, off_test_loader)
 print(f'Accuracy = {off_test_acc:.4f}.') 

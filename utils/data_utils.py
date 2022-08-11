@@ -159,3 +159,16 @@ def get_f1_off_relic_dloader(f1_root_dir, batch_size=20):
 
     return relic_off_train_loader
 
+def get_f1_eval_train_dloader(f1_root_dir, batch_size =64):
+    ds_split_path = os.path.join(f1_root_dir, 'food101_split.yaml')
+    split_file = open(ds_split_path, "r")
+    food_ds_split = yaml.safe_load(split_file)
+    split_file.close()
+
+    off_label, _ = food_ds_split['off'], food_ds_split['inc']
+    num_off_class = len(off_label)
+
+    f1_eval_train_ds = F1Subset(f1_root_dir, split='train', transform = test_trans, label_list=off_label, start_label_idx=0)
+    f1_eval_train_loader = DataLoader(f1_eval_train_ds, batch_size = batch_size, shuffle = False, num_workers = 8)
+
+    return f1_eval_train_loader, num_off_class

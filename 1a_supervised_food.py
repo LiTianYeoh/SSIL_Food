@@ -2,7 +2,7 @@ import torch
 from torchvision.datasets import Food101
 import os
 
-from utils.data_utils import get_f1_ord_dloader
+from utils.data_utils import get_f1_ord_dloader, get_f1_eval_train_dloader
 from models.offline_models import SUP_off
 
 main_dir = os.path.dirname(os.path.realpath(__file__))
@@ -12,10 +12,10 @@ vf_root_dir = os.path.join(data_dir, 'vf172')
 
 ## parameter
 #state_path = None
-state_path = 'supervised_offline_e020.pt'
+state_path = 'supervised_offline_e100.pt'
 
-to_train = True
-eval_perf = False
+to_train = False
+eval_perf = True
 show_train_loss = False
 
 max_epoch = 100
@@ -58,6 +58,10 @@ if to_train:
 
 ### Evaluate performance on test set
 if eval_perf:
+    eval_train_loader, _ = get_f1_eval_train_dloader(f1_root_dir=f1_root_dir, batch_size=batch_s)
+    print('Evaluating performance on train set...')
+    model.eval_perf(eval_train_loader)
+    print('Evaluating performance on test set...')
     model.eval_perf(test_loader)
 
 ### Train (epoch) loss graph
