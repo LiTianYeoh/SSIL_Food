@@ -4,6 +4,7 @@ import json
 import PIL.Image
 import os
 import yaml
+import pandas as pd
 from .transform_utils import train_trans, test_trans, pure_trans
 
 ######### Classes
@@ -83,6 +84,42 @@ class F1Subset(VisionDataset):
 
         return image, label
 
+class UECSubset(VisionDataset):
+    def __init__(self, root_dir, ltype, split, transform):
+        super().__init__(root_dir, transform=transform)
+        self.meta_dir = os.path.join(root_dir, 'meta')
+        self.image_dir = os.path.join(root_dir, 'UECFOOD256')
+        
+        #read img list for type and split specified
+        csv_name = ltype + '_' + split + '.csv'
+        csv_path = os.path.join(self.meta_dir, csv_name)
+        self.img_list = pd.read_csv(csv_path)
+        self.num_class = self.img_list.nunique()['manual_class'].item()
+
+    def __len__(self):
+        return len(self.img_list)
+
+    def __getitem__(self, idx):
+        cur_img_info = self.img_list.loc[idx]
+        img_class = int(cur_img_info['manual_class'].item())
+        img_act_id = int(cur_img_info['actual_id'].item())
+        img_jpg_name = str(int(cur_img_info['img'].item())) + '.jpg'
+
+        image_file = os.path.join(self.image_dir, str(img_act_id), img_jpg_name)
+        base_image = PIL.Image.open(image_file).convert("RGB")
+
+        #crop and transform
+        x1 = cur_img_info['x1'].item()
+        y1 = cur_img_info['y1'].item()
+        x2 = cur_img_info['x2'].item()
+        y2 = cur_img_info['y2'].item()
+
+        bb_crop_image = base_image.crop((x1, y1, x2, y2))
+
+        if self.transform:
+            return_img = self.transform(bb_crop_image)
+
+        return return_img, img_class
 
 
 
@@ -95,7 +132,7 @@ def get_ftr_dloader(ftrvec, label, batch_size):
     return ftr_dloader
 
 
-def get_f1_ord_dloader(f1_root_dir, off_inc='off', batch_size=64):
+def get_f1_ord_dloader(f1_root_dir, ltype='off', batch_size=64):
     #### read split yaml file
     ds_split_path = os.path.join(f1_root_dir, 'food101_split.yaml')
     split_file = open(ds_split_path, "r")
@@ -106,12 +143,12 @@ def get_f1_ord_dloader(f1_root_dir, off_inc='off', batch_size=64):
     num_off_class = len(off_label)
     num_inc_class = len(inc_label)
 
-    if off_inc == 'off':
+    if ltype == 'off':
         lab_list = off_label
         start_index = 0
         dloader_num_class = num_off_class
         set_text = "Offline"
-    elif off_inc == 'inc':
+    elif ltype == 'inc':
         lab_list = inc_label
         start_index = num_off_class
         dloader_num_class = num_inc_class
@@ -143,7 +180,6 @@ def get_f1_off_relic_dloader(f1_root_dir, batch_size=20):
     split_file.close()
 
     off_label = food_ds_split['off']
-    num_off_class = len(off_label)
 
     f1_relic_train_ds = F1Subset(f1_root_dir, split='train', transform = None,
     label_list=off_label, start_label_idx=0)
@@ -159,7 +195,7 @@ def get_f1_off_relic_dloader(f1_root_dir, batch_size=20):
 
     return relic_off_train_loader
 
-def get_f1_eval_train_dloader(f1_root_dir, batch_size =64):
+def get_f1_eval_train_dloader(f1_root_dir, batch_size=64):
 
     ds_split_path = os.path.join(f1_root_dir, 'food101_split.yaml')
     split_file = open(ds_split_path, "r")
@@ -167,14 +203,13 @@ def get_f1_eval_train_dloader(f1_root_dir, batch_size =64):
     split_file.close()
 
     off_label, _ = food_ds_split['off'], food_ds_split['inc']
-    num_off_class = len(off_label)
 
     f1_eval_train_ds = F1Subset(f1_root_dir, split='train', transform = test_trans, label_list=off_label, start_label_idx=0)
     f1_eval_train_loader = DataLoader(f1_eval_train_ds, batch_size = batch_size, shuffle = False, num_workers = 8)
 
-    return f1_eval_train_loader, num_off_class
+    return f1_eval_train_loader
 
-def get_f1_pure_dloader(f1_root_dir, off_inc='off', split = 'train', batch_size=64):
+def get_f1_pure_dloader(f1_root_dir, ltype='off', split = 'train', batch_size=64):
     #### read split yaml file
     ds_split_path = os.path.join(f1_root_dir, 'food101_split.yaml')
     split_file = open(ds_split_path, "r")
@@ -185,17 +220,60 @@ def get_f1_pure_dloader(f1_root_dir, off_inc='off', split = 'train', batch_size=
     num_off_class = len(off_label)
     num_inc_class = len(inc_label)
 
-    if off_inc == 'off':
+    if ltype == 'off':
         lab_list = off_label
         start_index = 0
-        dloader_num_class = num_off_class
-    elif off_inc == 'inc':
+        num_class = num_off_class
+    elif ltype == 'inc':
         lab_list = inc_label
         start_index = num_off_class
-        dloader_num_class = num_inc_class
-
+        num_class = num_inc_class
+    
     f1_pure_ds = F1Subset(f1_root_dir, split=split, transform = pure_trans, label_list=lab_list, start_label_idx=start_index)
     f1_pure_loader = DataLoader(f1_pure_ds, batch_size = batch_size, shuffle = True, num_workers = 8)
 
-    return f1_pure_loader, dloader_num_class
+    return f1_pure_loader, num_class
 
+#########################
+
+def get_uec_dloader(uec_root_dir, ltype = 'off', split = 'train', batch_size=64):
+    if split == 'train':
+        ds = UECSubset(uec_root_dir, ltype=ltype, split='train', transform=train_trans)
+        dloader = DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=8)
+    elif split == 'test':
+        ds = UECSubset(uec_root_dir, ltype=ltype, split='test', transform=test_trans)
+        dloader = DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=8)
+    else:
+        print('Unexpected split value!')
+        return None
+
+    num_class = ds.num_class
+    num_img = len(ds)
+    print(f'Obtained ordinary UEC {split} dataset for {ltype} learning containing {num_img} images of {num_class} classes.')
+    return dloader, num_class
+
+def get_uec_off_relic_dloader(uec_root_dir, batch_size=20):
+
+    pure_ds = UECSubset(uec_root_dir, ltype='off', split='train', transform=None)
+    relic_ds = DoubleAugmentedDataset(pure_ds, train_trans=train_trans, test_trans=test_trans)
+    relic_dloader = DataLoader(relic_ds, batch_size=batch_size, shuffle=True, num_workers=8)
+    
+    num_img = len(pure_ds)
+    print(f'Obtained ReLIC UEC train dataset for offline learning containing {num_img} images.')
+
+    return relic_dloader
+
+def get_uec_eval_train_loader(uec_root_dir, batch_size=64):
+
+    ds = UECSubset(uec_root_dir, ltype='off', split='train', transform=test_trans)
+    dloader = DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=8)
+
+    return dloader
+
+def get_uec_pure_dloader(uec_root_dir, ltype='off', split = 'train', batch_size=64):
+
+    ds = UECSubset(uec_root_dir, ltype=ltype, split=split, transform=pure_trans)
+    dloader = DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=8)
+    num_class = ds.num_class
+
+    return dloader, num_class
