@@ -1,5 +1,4 @@
 import torch
-from torchvision.datasets import Food101
 import os
 
 from utils.data_utils import \
@@ -15,11 +14,11 @@ uec_root_dir = os.path.join(data_dir, 'uec256')
 
 ## parameter
 ds = 'uec'
-state_path = None
-#state_path = 'supervised_offline_e100.pt'
+#state_path = None
+state_path = 'supervised_offline_e010.pt'
 
-to_train = True
-eval_perf = False
+to_train = False
+eval_perf = True
 show_train_loss = False
 
 max_epoch = 100

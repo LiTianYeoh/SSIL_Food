@@ -114,10 +114,10 @@ class UECSubset(VisionDataset):
         x2 = cur_img_info['x2'].item()
         y2 = cur_img_info['y2'].item()
 
-        bb_crop_image = base_image.crop((x1, y1, x2, y2))
+        return_img = base_image.crop((x1, y1, x2, y2))
 
         if self.transform:
-            return_img = self.transform(bb_crop_image)
+            return_img = self.transform(return_img)
 
         return return_img, img_class
 

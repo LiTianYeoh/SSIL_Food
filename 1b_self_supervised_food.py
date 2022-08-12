@@ -1,5 +1,4 @@
 import torch
-from torchvision.datasets import Food101
 import os
 
 from utils.data_utils import \
@@ -14,12 +13,12 @@ f1_root_dir = os.path.join(data_dir, 'food-101')
 uec_root_dir = os.path.join(data_dir, 'uec256')
 
 ## parameter
-ds = 'f1'
-#state_path = None
-state_path = 'relic_offline_e100.pt'
+ds = 'uec'
+state_path = None
+#state_path = 'relic_offline_e100.pt'
 
-to_train = False
-eval_perf = True
+to_train = True
+eval_perf = False
 show_train_loss = False
 
 max_epoch = 100
@@ -49,7 +48,7 @@ if ds == 'f1':
     if os.path.exists(f1_root_dir):
 
         print('Obtaining dataloader for supervised offline learning...')
-        _, f1_off_test_loader, num_off_class = get_f1_ord_dloader(f1_root_dir=f1_root_dir, off_inc = "off", batch_size=batch_s)
+        _, f1_off_test_loader, num_off_class = get_f1_ord_dloader(f1_root_dir=f1_root_dir, ltype = "off", batch_size=batch_s)
         f1_off_relic_train_loader = get_f1_off_relic_dloader(f1_root_dir, batch_size=batch_s)
 
         relic_train_loader = f1_off_relic_train_loader
