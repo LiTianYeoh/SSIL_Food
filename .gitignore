@@ -1,6 +1,8 @@
-data/*
+data/food-101/*
 !data/food-101/food101_split*
-!data/uec256/meta/*
+
+data/uec256/UECFOOD256
+
 output_model/*
 *.pyc
 record/

@@ -1,0 +1,257 @@
+manual_class,id,name
+0,173,beef noodle soup
+1,72,chilled noodle
+2,127,fine white noodles
+3,237,nasi uduk
+4,135,clear soup
+5,15,raisin bread
+6,118,waffle
+7,19,sandwiches
+8,18,pizza
+9,142,ham cutlet
+10,125,zoni
+11,78,fish-shaped pancake with bean jam
+12,53,steamed egg hotchpotch
+13,91,chinese soup
+14,9,fried rice
+15,219,laulau
+16,60,hambarg steak
+17,214,Small steamed savory rice pancake
+18,255,eight treasure rice
+19,165,lamb kebabs
+20,218,malasada
+21,112,kushikatu
+22,220,spam musubi
+23,230,bubur ayam
+24,62,dried fish
+25,107,dry curry
+26,101,green curry
+27,63,ginger pork saute
+28,233,mie ayam
+29,93,kinpira-style sauteed burdock
+30,54,tempura
+31,226,jambalaya
+32,191,noodles with fish curry
+33,25,tensin noodle
+34,221,oxtail soup
+35,117,tiramisu
+36,75,boiled chicken and vegetables
+37,241,curry puff
+38,229,ayam bakar
+39,84,spaghetti meat sauce
+40,205,coconut milk soup
+41,174,pork cutlet
+42,249,salt & pepper fried shrimp with shell
+43,147,tortilla
+44,206,pho
+45,13,croissant
+46,34,sauteed spinach
+47,176,fish ball soup
+48,85,fried shrimp
+49,12,toast
+50,66,cabbage roll
+51,166,"dish consisting of stir-fried potato, eggplant and green pepper"
+52,11,bibimbap
+53,160,cream puff
+54,232,laksa
+55,186,"hot and sour, fish and vegetable ragout"
+56,133,rice gruel
+57,46,grilled salmon
+58,195,charcoal-boiled pork neck
+59,185,"boned, sliced Hainan-style chicken with marinated rice"
+60,28,Japanese-style pancake
+61,167,roast duck
+62,94,rice ball
+63,69,natto
+64,168,hot pot
+65,245,crullers
+66,102,okinawa soba
+67,108,kamameshi
+68,77,sushi bowl
+69,33,grilled eggplant
+70,234,mie goreng
+71,252,winter melon soup
+72,179,trunip pudding
+73,193,Pork with lemon
+74,56,sirloin cutlet
+75,151,scrambled egg
+76,192,Pork Sticky Noodles
+77,175,minced pork rice
+78,155,oatmeal
+79,247,three cup chicken
+80,32,croquette
+81,99,mixed rice
+82,242,chow mein
+83,88,macaroni salad
+84,143,minced meat cutlet
+85,253,steamed spareribs
+86,123,mushroom risotto
+87,139,pork loin cutlet
+88,225,churro
+89,182,khao soi
+90,49,grilled pacific saury
+91,96,dipping noodles
+92,44,teriyaki grilled fish
+93,243,zha jiang mian
+94,47,salmon meuniere
+95,10,tempura bowl
+96,21,tempura udon
+97,254,chinese pumpkin pie
+98,1,rice
+99,57,nanbanzuke
+100,211,Shrimp patties
+101,244,kung pao chicken
+102,207,Hue beef rice vermicelli soup
+103,189,pork satay
+104,27,spaghetti
+105,29,takoyaki
+106,64,spicy chili-flavored tofu
+107,240,bak kut teh
+108,210,Steamed rice roll
+109,126,french toast
+110,73,stir-fried beef and peppers
+111,6,beef curry
+112,208,Vermicelli noodles with snails
+113,184,Thai papaya salad
+114,26,fried noodle
+115,55,fried chicken
+116,158,muffin
+117,213,Coconut milk-flavored crepes with shrimp and beef
+118,4,chicken-'n'-egg on rice
+119,115,champon
+120,70,cold tofu
+121,5,pork cutlet on rice
+122,8,chicken rice
+123,23,ramen noodle
+124,134,broiled eel bowl
+125,178,glutinous oil rice
+126,89,Japanese tofu and vegetable chowder
+127,114,pancake
+128,103,mango pudding
+129,235,nasi campur
+130,150,meat loaf
+131,36,miso soup
+132,223,lumpia
+133,2,eels on rice
+134,31,sauteed vegetables
+135,209,Fried spring rolls
+136,231,gulai
+137,145,bagel
+138,119,rare cheese cake
+139,198,Barbecued red pork in sauce with rice
+140,172,custard tart
+141,124,samul
+142,113,yellow curry
+143,83,cutlet curry
+144,98,french fries
+145,109,rice vermicelli
+146,97,hot dog
+147,216,loco moco
+148,217,haupia
+149,20,udon noodle
+150,215,Glutinous Rice Balls
+151,177,oyster omelette
+152,157,oshiruko
+153,250,baked salmon
+154,228,ayam goreng
+155,159,popcorn
+156,30,gratin
+157,58,boiled fish
+158,188,beef in oyster sauce
+159,120,shortcake
+160,35,vegetable tempura
+161,90,pork miso soup
+162,238,babi guling
+163,61,steak
+164,71,egg roll
+165,104,almond jelly
+166,153,lasagna
+167,203,Crispy Noodles
+168,212,ball shaped bun with pork
+169,131,namero
+170,201,Wonton soup
+171,79,shrimp with chill source
+172,162,apple pie
+173,251,braised pork meat ball with napa cabbage
+174,16,chip butty
+175,110,paella
+176,146,scone
+177,256,hot & sour soup
+178,38,sausage
+179,50,sukiyaki
+180,76,sashimi bowl
+181,22,soba noodle
+182,24,beef noodle
+183,187,stir-fried mixed vegetables
+184,121,chop suey
+185,3,pilaf
+186,129,pot au feu
+187,180,stinky tofu
+188,65,yakitori
+189,105,jjigae
+190,149,nachos
+191,148,tacos
+192,59,seasoned beef with potatoes
+193,197,Deep Fried Chicken Wing
+194,239,kaya toast
+195,39,oden
+196,161,doughnut
+197,183,Sour prawn soup
+198,92,beef bowl
+199,106,dak galbi
+200,100,goya chanpuru
+201,81,steamed meat dumpling
+202,137,mozuku
+203,236,nasi padang
+204,132,french bread
+205,164,fried pork in scoop
+206,154,Caesar salad
+207,141,chicken cutlet
+208,74,simmered pork
+209,45,fried fish
+210,43,stew
+211,122,twice cooked pork
+212,163,parfait
+213,190,spicy chicken salad
+214,202,Chicken Rice Curry With Coconut
+215,152,rice gratin
+216,116,crape
+217,7,sushi
+218,170,xiao long bao
+219,17,hamburger
+220,136,yudofu
+221,196,fried mussel pancakes
+222,224,brownie
+223,222,adobo
+224,181,lemon fig jelly
+225,87,green salad
+226,200,Rice crispy pork
+227,171,moon cake
+228,156,fried pork dumplings served in soup
+229,246,eggplant with garlic sauce
+230,130,chicken nugget
+231,144,thinly sliced raw horsemeat
+232,204,Egg Noodle In Chicken Yellow Curry
+233,128,minestrone
+234,80,roast chicken
+235,138,inarizushi
+236,248,bean curd family style
+237,140,pork fillet cutlet
+238,111,tanmen
+239,42,jiaozi
+240,14,roll bread
+241,52,lightly roasted fish
+242,194,stewed pork leg
+243,40,omelet
+244,51,sweet and sour pork
+245,41,ganmodoki
+246,48,sashimi
+247,169,pork belly
+248,67,omelet
+249,82,omelet with fried rice
+250,37,potage
+251,227,nasi goreng
+252,95,pizza toast
+253,68,egg sunny-side up
+254,86,potato salad
+255,199,Rice with roast duck
