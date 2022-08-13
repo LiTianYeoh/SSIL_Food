@@ -15,7 +15,7 @@ uec_root_dir = os.path.join(data_dir, 'uec256')
 ## parameter
 ds = 'uec'
 #state_path = None
-state_path = 'supervised_offline_e010.pt'
+state_path = 'supervised_offline_e040.pt'
 
 to_train = False
 eval_perf = True

@@ -154,8 +154,11 @@ class SUP_off():
 
             self.next_epoch += 1
             self.save_state()
+            if (self.next_epoch-1) % 20 == 0:
+                pt_name = 'supervised_offline_e' + format(self.next_epoch-1, '03d') + '.pt'
+                self.save_state(output_name=pt_name)
 
-    def save_state(self):
+    def save_state(self, output_name='supervised_offline.pt'):
         state = {
             "next_epoch": self.next_epoch,
             "cnn_model": self.model.state_dict(),
@@ -163,7 +166,6 @@ class SUP_off():
             "scheduler": self.scheduler.state_dict(),
             "train_prog": self.train_prog
         }
-        output_name = 'supervised_offline.pt'
         output_path = os.path.join(self.out_dir, output_name)
         torch.save(state, output_path)
         print("Saved state at " + output_path)
@@ -294,9 +296,12 @@ class ReLIC_off():
 
             self.next_epoch += 1
             self.save_state()
+            if (self.next_epoch-1) % 10 == 0:
+                pt_name = 'relic_offline_e' + format(self.next_epoch-1, '03d') + '.pt'
+                self.save_state(output_name=pt_name)
 
 
-    def save_state(self):
+    def save_state(self, output_name = 'relic_offline.pt'):
         state = {
             "next_epoch": self.next_epoch,
             "cnn_model": self.model.state_dict(),
@@ -304,7 +309,7 @@ class ReLIC_off():
             "scheduler": self.scheduler.state_dict(),
             "train_prog": self.train_prog
         }
-        output_name = 'relic_offline.pt'
+        
         output_path = os.path.join(self.out_dir, output_name)
         torch.save(state, output_path)
         print("Saved state at " + output_path)

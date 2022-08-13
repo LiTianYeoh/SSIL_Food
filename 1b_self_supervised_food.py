@@ -14,11 +14,11 @@ uec_root_dir = os.path.join(data_dir, 'uec256')
 
 ## parameter
 ds = 'uec'
-state_path = None
-#state_path = 'relic_offline_e100.pt'
+#state_path = None
+state_path = 'relic_offline_e030.pt'
 
-to_train = True
-eval_perf = False
+to_train = False
+eval_perf = True
 show_train_loss = False
 
 max_epoch = 100
