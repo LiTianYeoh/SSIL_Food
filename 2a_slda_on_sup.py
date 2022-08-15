@@ -1,8 +1,7 @@
 import torch
-from torchvision.datasets import Food101
 import os
 
-from utils.data_utils import get_f1_ord_dloader
+from utils.data_utils import get_f1_ord_dloader, get_uec_dloader
 from utils.inc_utils import ModelWrapper, pool_feat, slda_eval_acc
 from models.offline_models import SUP_off
 from models.inc_slda import StreamingLDA
@@ -10,10 +9,10 @@ from models.inc_slda import StreamingLDA
 main_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(main_dir,'data')
 f1_root_dir = os.path.join(data_dir, 'food-101')
-vf_root_dir = os.path.join(data_dir, 'vf172')
+uec_root_dir = os.path.join(data_dir, 'uec256')
 
 ## parameter
-
+ds = 'uec'
 off_state_path = 'supervised_offline_e100.pt'
 inc_state_name = None #'supervised_inc'
 
@@ -28,25 +27,47 @@ else:
     print("Using CPU")
 
 # Prepare data
-print('Preparing food101 dataset...')
+if ds == 'f1':
+    print('Preparing food101 dataset...')
 
-print('Checking dataset...')
-check_f101 = Food101(root=data_dir, split='train', download=True)
+    print('Checking dataset...')
+    if os.path.exists(f1_root_dir):
 
-print('Obtaining dataloader for base class (offline learning)...')
-f1_off_train_loader, f1_off_test_loader, num_off_class = get_f1_ord_dloader(f1_root_dir=f1_root_dir, off_inc = "off", batch_size=batch_s)
+        print('Obtaining dataloader for base class (offline learning)...')
+        f1_off_train_loader, f1_off_test_loader, num_off_class = get_f1_ord_dloader(f1_root_dir=f1_root_dir, ltype = "off", batch_size=batch_s)
 
-off_train_loader = f1_off_train_loader
-off_test_loader = f1_off_test_loader
+        off_train_loader = f1_off_train_loader
+        off_test_loader = f1_off_test_loader
 
-print('Obtaining dataloader for new class (incremental learning)...')
-f1_inc_train_loader, f1_inc_test_loader, num_inc_class = get_f1_ord_dloader(f1_root_dir=f1_root_dir, off_inc = "inc", batch_size=batch_s)
+        print('Obtaining dataloader for new class (incremental learning)...')
+        f1_inc_train_loader, f1_inc_test_loader, num_inc_class = get_f1_ord_dloader(f1_root_dir=f1_root_dir, ltype = "inc", batch_size=batch_s)
 
-inc_train_loader = f1_inc_train_loader
-inc_test_loader = f1_inc_test_loader
+        inc_train_loader = f1_inc_train_loader
+        inc_test_loader = f1_inc_test_loader
+
+    else:
+        print('Could not locate food101 data!')
+
+elif ds == 'uec':
+    print('Preparing uec dataset...')
+
+    print('Checking dataset...')
+    if os.path.exists(uec_root_dir):
+
+        print('Obtaining dataloader for base class (offline learning)...')
+        off_train_loader, num_off_class = get_uec_dloader(uec_root_dir, ltype='off', split='train', batch_size=batch_s)
+        off_test_loader, _ = get_uec_dloader(uec_root_dir, ltype='off', split='test', batch_size=batch_s)
+
+        print('Obtaining dataloader for new class (incremental learning)...')
+    
+        inc_train_loader, num_inc_class = get_uec_dloader(uec_root_dir, ltype='inc', split='train', batch_size=batch_s)
+        inc_test_loader, _ = get_uec_dloader(uec_root_dir, ltype='inc', split='test', batch_size=batch_s)
+
+    else:
+        print('Could not locate uec256 data!')
 
 
-output_dir = os.path.join(main_dir, 'output_model')
+output_dir = os.path.join(main_dir, 'output_model', ds)
 off_model = SUP_off(off_train_loader, num_off_class, 100, 10, 0.2, device, output_dir)
 off_model.load_state(off_state_path)
 
