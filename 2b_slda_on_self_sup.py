@@ -3,7 +3,7 @@ import os
 
 from utils.data_utils import get_f1_ord_dloader, get_uec_dloader
 from utils.inc_utils import ModelWrapper, pool_feat, slda_eval_acc
-from models.offline_models import ReLIC_off, ReLIC
+from models.offline_models import ReLIC_off
 from models.inc_slda import StreamingLDA
 
 main_dir = os.path.dirname(os.path.realpath(__file__))
@@ -17,7 +17,6 @@ off_state_path = 'relic_offline.pt'
 inc_state_name = None #'relic_inc'
 
 output_layers = ['layer4.1']
-output_pooling = True
 batch_s = 64
 
 if torch.cuda.is_available():
@@ -71,7 +70,7 @@ elif ds == 'uec':
 
 
 output_dir = os.path.join(main_dir, 'output_model', ds)
-off_model = ReLIC(off_train_loader, 100, 10, 0.2, device, output_dir)
+off_model = ReLIC_off(off_train_loader, 100, 10, 0.2, device, output_dir)
 off_model.load_state(off_state_path)
 
 
@@ -103,8 +102,7 @@ else:
         batch_y = batch[1]
 
         batch_x_feat = ftr_extraction_wrapper(batch_x)
-        if output_pooling:
-            batch_x_feat = pool_feat(batch_x_feat)
+        batch_x_feat = pool_feat(batch_x_feat)
 
         end = start + batch_x_feat.shape[0]
         base_init_data[start:end] = batch_x_feat.cpu()
@@ -119,7 +117,7 @@ else:
 
     print('Evaluating accuracy before introducing new classes:')
     print('Evaluating accuracy on base (off) test set...')
-    off_test_acc = slda_eval_acc(slda_classifier, ftr_extraction_wrapper, off_test_loader, req_pool=output_pooling)
+    off_test_acc = slda_eval_acc(slda_classifier, ftr_extraction_wrapper, off_test_loader)
     print(f'Accuracy = {off_test_acc:.4f}.') 
 
     # Train SLDA incrementally
@@ -131,8 +129,7 @@ else:
         batch_y = batch[1]
 
         batch_x_feat = ftr_extraction_wrapper(batch_x)
-        if output_pooling:
-            batch_x_feat = pool_feat(batch_x_feat)
+        batch_x_feat = pool_feat(batch_x_feat)
 
         for x, y in zip(batch_x_feat, batch_y):
             slda_classifier.fit(x.cpu(), y.view(1, ))
@@ -148,9 +145,9 @@ else:
 # Evaluate accuracy
 print('Evaluating final accuracy:')
 print('Evaluating accuracy on base (off) test set...')
-off_test_acc = slda_eval_acc(slda_classifier, ftr_extraction_wrapper, off_test_loader, req_pool=output_pooling)
+off_test_acc = slda_eval_acc(slda_classifier, ftr_extraction_wrapper, off_test_loader)
 print(f'Accuracy = {off_test_acc:.4f}.') 
 
 print('Evaluating accuracy on new (inc) test set...')
-inc_test_acc = slda_eval_acc(slda_classifier, ftr_extraction_wrapper, inc_test_loader, req_pool=output_pooling)
+inc_test_acc = slda_eval_acc(slda_classifier, ftr_extraction_wrapper, inc_test_loader)
 print(f'Accuracy = {inc_test_acc:.4f}.') 

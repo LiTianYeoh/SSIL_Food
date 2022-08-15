@@ -15,7 +15,7 @@ uec_root_dir = os.path.join(data_dir, 'uec256')
 ## parameter
 ds = 'uec'
 #state_path = None
-state_path = 'relic_offline_e030.pt'
+state_path = 'relic_offline.pt'
 
 to_train = False
 eval_perf = True
@@ -47,7 +47,7 @@ if ds == 'f1':
 
     if os.path.exists(f1_root_dir):
 
-        print('Obtaining dataloader for supervised offline learning...')
+        print('Obtaining dataloader for ReLIC offline learning...')
         _, f1_off_test_loader, num_off_class = get_f1_ord_dloader(f1_root_dir=f1_root_dir, ltype = "off", batch_size=batch_s)
         f1_off_relic_train_loader = get_f1_off_relic_dloader(f1_root_dir, batch_size=batch_s)
 
@@ -62,7 +62,7 @@ elif ds == 'uec':
 
     print('Checking dataset...')
     if os.path.exists(uec_root_dir):
-        print('Obtaining dataloader for supervised offline learning...')
+        print('Obtaining dataloader for ReLIC offline learning...')
         relic_train_loader = get_uec_off_relic_dloader(uec_root_dir=uec_root_dir, batch_size=batch_s)
         test_loader, num_off_class = get_uec_dloader(uec_root_dir=uec_root_dir, ltype='off', split ='test', batch_size=batch_s)
     else:
