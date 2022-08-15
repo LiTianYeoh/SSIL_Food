@@ -13,10 +13,10 @@ uec_root_dir = os.path.join(data_dir, 'uec256')
 
 ## parameter
 ds = 'uec'
-off_state_path = 'relic_offline.pt'
+off_state_path = 'relic_offline_e100.pt'
 inc_state_name = None #'relic_inc'
 
-output_layers = ['layer4.1']
+output_layers = ['encoder.layer4.1']
 batch_s = 64
 
 if torch.cuda.is_available():
