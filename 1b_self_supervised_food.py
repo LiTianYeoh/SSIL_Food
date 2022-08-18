@@ -15,7 +15,7 @@ uec_root_dir = os.path.join(data_dir, 'uec256')
 ## parameter
 ds = 'uec'
 #state_path = None
-state_path = 'relic_offline.pt'
+state_path = 'relic_offline_e100.pt'
 
 to_train = False
 eval_perf = True
@@ -96,4 +96,4 @@ if eval_perf:
 
 ### Train (epoch) loss graph
 if show_train_loss:
-    model.show_train_prog()
+    model.show_train_prog(ds)

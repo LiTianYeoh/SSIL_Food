@@ -13,13 +13,13 @@ f1_root_dir = os.path.join(data_dir, 'food-101')
 uec_root_dir = os.path.join(data_dir, 'uec256')
 
 ## parameter
-ds = 'uec'
+ds = 'f1'
 #state_path = None
-state_path = 'supervised_offline_e040.pt'
+state_path = 'supervised_offline_e100.pt'
 
 to_train = False
-eval_perf = True
-show_train_loss = False
+eval_perf = False
+show_train_loss = True
 
 max_epoch = 100
 wu_epoch = 10
@@ -92,4 +92,4 @@ if eval_perf:
 
 ### Train (epoch) loss graph
 if show_train_loss:
-    model.show_train_prog()
+    model.show_train_prog(ds)

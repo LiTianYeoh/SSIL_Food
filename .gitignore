@@ -5,4 +5,4 @@ data/uec256/UECFOOD256
 
 output_model/*
 *.pyc
-record/
+test_view_image.py

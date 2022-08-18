@@ -217,10 +217,23 @@ class SUP_off():
 
         self.model.train()
         
-    def show_train_prog(self):
+    def show_train_prog(self, ds):
+        if ds == 'f1':
+            ds_name = 'Food101'
+        elif ds == 'uec':
+            ds_name = 'UECFood256'
+        
         x_step = self.train_prog[:,0]
         y_loss = self.train_prog[:,1]
-        plt.plot(x_step, y_loss, 'ro')
+        plt.plot(x_step, y_loss, 'r')
+        plt.xlabel('Epoch')
+        plt.ylabel('Cross Entropy Loss')
+        plt.title(f'Supervised Learning on {ds_name}')
+
+        fig_name = 'sup_off_loss_' + ds + '.png'
+        fig_path = os.path.join(self.out_dir, fig_name)
+        plt.savefig(fig_path)
+        print(f'Saved loss curve at {fig_path}')
         plt.show()
 
 
@@ -388,8 +401,21 @@ class ReLIC_off():
         self.model.train()
 
         
-    def show_train_prog(self):
+    def show_train_prog(self, ds):
+        if ds == 'f1':
+            ds_name = 'Food101'
+        elif ds == 'uec':
+            ds_name = 'UECFood256'
+
         x_step = self.train_prog[:,0]
         y_loss = self.train_prog[:,1]
-        plt.plot(x_step, y_loss, 'ro')
+        plt.plot(x_step, y_loss, 'r')
+        plt.xlabel('Epoch')
+        plt.ylabel('ReLIC Loss')
+        plt.title(f'Self-Supervised Learning on {ds_name}')
+        
+        fig_name = 'relic_off_loss_' + ds + '.png'
+        fig_path = os.path.join(self.out_dir, fig_name)
+        plt.savefig(fig_path)
+        print(f'Saved loss curve at {fig_path}')
         plt.show()
